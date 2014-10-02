@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/outbrain/log"
+	"github.com/outbrain/golib/log"
 	"strconv"
 	"strings"
 )
