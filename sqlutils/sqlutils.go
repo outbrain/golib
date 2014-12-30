@@ -30,6 +30,14 @@ import (
 // for easy, typed getters by column name.
 type RowMap map[string]sql.NullString
 
+// RowData is the result of a single row, in positioned array format
+type RowData []sql.NullString
+
+// ResultData is an ordered row set of RowData
+type ResultData []RowData
+
+var EmptyResultData = ResultData{}
+
 func (this *RowMap) GetString(key string) string {
 	return (*this)[key].String
 }
@@ -150,6 +158,28 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error) error {
 	}
 	err = ScanRowsToMaps(rows, on_row)
 	return err
+}
+
+// QueryResultData returns a raw array of rows
+func QueryResultData(db *sql.DB, query string) (ResultData, error) {
+	var err error
+	defer func() {
+		if derr := recover(); derr != nil {
+			err = errors.New(fmt.Sprintf("QueryRowsMap unexpected error: %+v", derr))
+		}
+	}()
+
+	rows, err := db.Query(query)
+	defer rows.Close()
+	if err != nil && err != sql.ErrNoRows {
+		return EmptyResultData, log.Errore(err)
+	}
+	resultData := ResultData{}
+	err = ScanRowsToArrays(rows, func(rowData []sql.NullString) error {
+		resultData = append(resultData, rowData)
+		return nil
+	})
+	return resultData, err
 }
 
 // ExecQuery executes given query using given args on given DB. It will safele prepare, execute and close
