@@ -18,6 +18,7 @@ package sqlutils
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -29,6 +30,18 @@ import (
 // RowMap represents one row in a result set. Its objective is to allow
 // for easy, typed getters by column name.
 type RowMap map[string]sql.NullString
+
+// Cell data is the result of a single (atomic) column in a single row
+type CellData sql.NullString
+
+//
+func (this *CellData) MarshalJSON() ([]byte, error) {
+	if this.Valid {
+		return json.Marshal(this.String)
+	} else {
+		return json.Marshal(nil)
+	}
+}
 
 // RowData is the result of a single row, in positioned array format
 type RowData []sql.NullString
