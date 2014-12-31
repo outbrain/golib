@@ -44,7 +44,7 @@ func (this *CellData) MarshalJSON() ([]byte, error) {
 }
 
 // RowData is the result of a single row, in positioned array format
-type RowData []sql.NullString
+type RowData []CellData
 
 // ResultData is an ordered row set of RowData
 type ResultData []RowData
