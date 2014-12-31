@@ -16,7 +16,7 @@
 
 package math
 
-func minInt(i1, i2 int) int {
+func MinInt(i1, i2 int) int {
 	if i1 < i2 {
 		return i1
 	} else {
@@ -24,7 +24,7 @@ func minInt(i1, i2 int) int {
 	}
 }
 
-func maxInt(i1, i2 int) int {
+func MaxInt(i1, i2 int) int {
 	if i1 > i2 {
 		return i1
 	} else {
