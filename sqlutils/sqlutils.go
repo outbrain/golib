@@ -42,6 +42,10 @@ func (this *CellData) MarshalJSON() ([]byte, error) {
 	}
 }
 
+func (this *CellData) NullString() *sql.NullString {
+	return (*sql.NullString)(this)
+}
+
 // RowData is the result of a single row, in positioned array format
 type RowData []CellData
 
@@ -124,7 +128,7 @@ func RowToArray(rows *sql.Rows, columns []string) []CellData {
 	buff := make([]interface{}, len(columns))
 	data := make([]CellData, len(columns))
 	for i, _ := range buff {
-		buff[i] = &data[i]
+		buff[i] = data[i].NullString()
 	}
 	rows.Scan(buff...)
 	return data
@@ -136,7 +140,6 @@ func ScanRowsToArrays(rows *sql.Rows, on_row func([]CellData) error) error {
 	columns, _ := rows.Columns()
 	for rows.Next() {
 		arr := RowToArray(rows, columns)
-
 		err := on_row(arr)
 		if err != nil {
 			return err
