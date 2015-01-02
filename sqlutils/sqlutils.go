@@ -29,12 +29,11 @@ import (
 
 // RowMap represents one row in a result set. Its objective is to allow
 // for easy, typed getters by column name.
-type RowMap map[string]sql.NullString
+type RowMap map[string]CellData
 
 // Cell data is the result of a single (atomic) column in a single row
 type CellData sql.NullString
 
-//
 func (this *CellData) MarshalJSON() ([]byte, error) {
 	if this.Valid {
 		return json.Marshal(this.String)
@@ -45,6 +44,16 @@ func (this *CellData) MarshalJSON() ([]byte, error) {
 
 // RowData is the result of a single row, in positioned array format
 type RowData []CellData
+
+// MarshalJSON will marshal this map as JSON
+func (this *RowData) MarshalJSON() ([]byte, error) {
+	cells := make([](*CellData), len(*this), len(*this))
+	for i, val := range *this {
+		d := CellData(val)
+		cells[i] = &d
+	}
+	return json.Marshal(cells)
+}
 
 // ResultData is an ordered row set of RowData
 type ResultData []RowData
@@ -111,9 +120,9 @@ func GetDB(mysql_uri string) (*sql.DB, bool, error) {
 
 // RowToArray is a convenience function, typically not called directly, which maps a
 // single read database row into a NullString
-func RowToArray(rows *sql.Rows, columns []string) []sql.NullString {
+func RowToArray(rows *sql.Rows, columns []string) []CellData {
 	buff := make([]interface{}, len(columns))
-	data := make([]sql.NullString, len(columns))
+	data := make([]CellData, len(columns))
 	for i, _ := range buff {
 		buff[i] = &data[i]
 	}
@@ -123,7 +132,7 @@ func RowToArray(rows *sql.Rows, columns []string) []sql.NullString {
 
 // ScanRowsToArrays is a convenience function, typically not called directly, which maps rows
 // already read from the databse into arrays of NullString
-func ScanRowsToArrays(rows *sql.Rows, on_row func([]sql.NullString) error) error {
+func ScanRowsToArrays(rows *sql.Rows, on_row func([]CellData) error) error {
 	columns, _ := rows.Columns()
 	for rows.Next() {
 		arr := RowToArray(rows, columns)
@@ -140,8 +149,8 @@ func ScanRowsToArrays(rows *sql.Rows, on_row func([]sql.NullString) error) error
 // already read from the databse into RowMap entries.
 func ScanRowsToMaps(rows *sql.Rows, on_row func(RowMap) error) error {
 	columns, _ := rows.Columns()
-	err := ScanRowsToArrays(rows, func(arr []sql.NullString) error {
-		m := make(map[string]sql.NullString)
+	err := ScanRowsToArrays(rows, func(arr []CellData) error {
+		m := make(map[string]CellData)
 		for k, data_col := range arr {
 			m[columns[k]] = data_col
 		}
@@ -188,7 +197,7 @@ func QueryResultData(db *sql.DB, query string) (ResultData, error) {
 		return EmptyResultData, log.Errore(err)
 	}
 	resultData := ResultData{}
-	err = ScanRowsToArrays(rows, func(rowData []sql.NullString) error {
+	err = ScanRowsToArrays(rows, func(rowData []CellData) error {
 		resultData = append(resultData, rowData)
 		return nil
 	})
