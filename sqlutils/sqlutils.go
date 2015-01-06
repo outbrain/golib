@@ -68,6 +68,14 @@ func (this *RowMap) GetString(key string) string {
 	return (*this)[key].String
 }
 
+// GetStringD returns a string from the map, or a default value if the key does not exist
+func (this *RowMap) GetStringD(key string, def string) string {
+	if cell, ok := (*this)[key]; ok {
+		return cell.String
+	}
+	return def
+}
+
 func (this *RowMap) GetInt64(key string) int64 {
 	res, _ := strconv.ParseInt(this.GetString(key), 10, 0)
 	return res
