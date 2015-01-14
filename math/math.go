@@ -31,3 +31,19 @@ func MaxInt(i1, i2 int) int {
 		return i2
 	}
 }
+
+// TernaryString acts as liek an "? :" C-style ternary operator for strings
+func TernaryString(condition bool, resTrue string, resFalse string) string {
+	if condition {
+		return resTrue
+	}
+	return resFalse
+}
+
+// TernaryString acts as liek an "? :" C-style ternary operator for ints
+func TernaryInt(condition bool, resTrue int, resFalse int) int {
+	if condition {
+		return resTrue
+	}
+	return resFalse
+}
