@@ -215,13 +215,30 @@ func QueryResultData(db *sql.DB, query string) (ResultData, error) {
 	return resultData, err
 }
 
+// ExecNoPrepare executes given query using given args on given DB, without using prepared statements
+func ExecNoPrepare(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
+	var err error
+	defer func() {
+		if derr := recover(); derr != nil {
+			err = errors.New(fmt.Sprintf("ExecNoPrepare unexpected error: %+v", derr))
+		}
+	}()
+
+	var res sql.Result
+	res, err = db.Exec(query, args...)
+	if err != nil {
+		log.Errore(err)
+	}
+	return res, err
+}
+
 // ExecQuery executes given query using given args on given DB. It will safele prepare, execute and close
 // the statement.
 func execInternal(silent bool, db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("QueryRowsMap unexpected error: %+v", derr))
+			err = errors.New(fmt.Sprintf("execInternal unexpected error: %+v", derr))
 		}
 	}()
 
