@@ -215,7 +215,7 @@ func QueryResultData(db *sql.DB, query string) (ResultData, error) {
 	return resultData, err
 }
 
-// ExecNoPrepare executes given query using given args on given DB, without using prepared statements
+// ExecNoPrepare executes given query using given args on given DB, without using prepared statements.
 func ExecNoPrepare(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
 	var err error
 	defer func() {
