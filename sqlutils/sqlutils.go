@@ -156,15 +156,20 @@ func ScanRowsToArrays(rows *sql.Rows, on_row func([]CellData) error) error {
 	return nil
 }
 
+func rowToMap(row []CellData, columns []string) map[string]CellData {
+	m := make(map[string]CellData)
+	for k, data_col := range row {
+		m[columns[k]] = data_col
+	}
+	return m
+}
+
 // ScanRowsToMaps is a convenience function, typically not called directly, which maps rows
 // already read from the databse into RowMap entries.
 func ScanRowsToMaps(rows *sql.Rows, on_row func(RowMap) error) error {
 	columns, _ := rows.Columns()
 	err := ScanRowsToArrays(rows, func(arr []CellData) error {
-		m := make(map[string]CellData)
-		for k, data_col := range arr {
-			m[columns[k]] = data_col
-		}
+		m := rowToMap(arr, columns)
 		err := on_row(m)
 		if err != nil {
 			return err
@@ -193,8 +198,8 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error) error {
 	return err
 }
 
-// QueryResultData returns a raw array of rows
-func QueryResultData(db *sql.DB, query string) (ResultData, error) {
+// queryResultData returns a raw array of rows for a given query, optionally reading and returning column names
+func queryResultData(db *sql.DB, query string, retrieveColumns bool) (ResultData, []string, error) {
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
@@ -202,17 +207,51 @@ func QueryResultData(db *sql.DB, query string) (ResultData, error) {
 		}
 	}()
 
+	columns := []string{}
 	rows, err := db.Query(query)
 	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
-		return EmptyResultData, log.Errore(err)
+		return EmptyResultData, columns, log.Errore(err)
+	}
+	if retrieveColumns {
+		// Don't pay if you don't want to
+		columns, _ = rows.Columns()
 	}
 	resultData := ResultData{}
 	err = ScanRowsToArrays(rows, func(rowData []CellData) error {
 		resultData = append(resultData, rowData)
 		return nil
 	})
+	return resultData, columns, err
+}
+
+// QueryResultData returns a raw array of rows
+func QueryResultData(db *sql.DB, query string) (ResultData, error) {
+	resultData, _, err := queryResultData(db, query, false)
 	return resultData, err
+}
+
+// QueryResultDataNamed returns a raw array of rows, with column names
+func QueryResultDataNamed(db *sql.DB, query string) (ResultData, []string, error) {
+	return queryResultData(db, query, true)
+}
+
+// QueryRowsMapBuffered reads data from the database into a buffer, and only then applies the given function per row.
+// This allows the application to take its time with processing the data, albeit consuming as much memory as required by
+// the result set.
+func QueryRowsMapBuffered(db *sql.DB, query string, on_row func(RowMap) error) error {
+	resultData, columns, err := queryResultData(db, query, true)
+	if err != nil {
+		// Already logged
+		return err
+	}
+	for _, row := range resultData {
+		err = on_row(rowToMap(row, columns))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ExecNoPrepare executes given query using given args on given DB, without using prepared statements.
