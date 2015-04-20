@@ -25,6 +25,7 @@ import (
 	"github.com/outbrain/golib/log"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // RowMap represents one row in a result set. Its objective is to allow
@@ -114,10 +115,15 @@ func (this *RowMap) GetBool(key string) bool {
 
 // knownDBs is a DB cache by uri
 var knownDBs map[string]*sql.DB = make(map[string]*sql.DB)
+var knownDBsMutex = &sync.Mutex{}
 
 // GetDB returns a DB instance based on uri.
 // bool result indicates whether the DB was returned from cache; err
 func GetDB(mysql_uri string) (*sql.DB, bool, error) {
+	knownDBsMutex.Lock()
+	defer func() {
+		knownDBsMutex.Unlock()
+	}()
 
 	var exists bool
 	if _, exists = knownDBs[mysql_uri]; !exists {
