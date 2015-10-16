@@ -19,6 +19,7 @@ package log
 import (
 	"errors"
 	"fmt"
+	"log/syslog"
 	"os"
 	"runtime/debug"
 	"time"
@@ -47,6 +48,26 @@ func (this LogLevel) String() string {
 	return "unknown"
 }
 
+func LogLevelFromString(logLevelName string) (LogLevel, error) {
+	switch logLevelName {
+	case "FATAL":
+		return FATAL, nil
+	case "CRITICAL":
+		return CRITICAL, nil
+	case "ERROR":
+		return ERROR, nil
+	case "WARNING":
+		return WARNING, nil
+	case "NOTICE":
+		return NOTICE, nil
+	case "INFO":
+		return INFO, nil
+	case "DEBUG":
+		return DEBUG, nil
+	}
+	return 0, fmt.Errorf("Unknown LogLevel name: %+v", logLevelName)
+}
+
 const (
 	FATAL LogLevel = iota
 	CRITICAL
@@ -56,6 +77,8 @@ const (
 	INFO
 	DEBUG
 )
+
+var syslogWriter *syslog.Writer
 
 const TimeFormat = "2006-01-02 15:04:05"
 
@@ -80,13 +103,45 @@ func GetLevel() LogLevel {
 	return globalLogLevel
 }
 
+func EnableSyslogWriter(tag string) (err error) {
+	syslogWriter, err = syslog.New(syslog.LOG_ERR, tag)
+	if err != nil {
+		syslogWriter = nil
+	}
+	return err
+}
+
 // logFormattedEntry nicely formats and emits a log entry
 func logFormattedEntry(logLevel LogLevel, message string, args ...interface{}) string {
 	if logLevel > globalLogLevel {
 		return ""
 	}
-	entryString := fmt.Sprintf("%s %s %s", time.Now().Format(TimeFormat), logLevel, fmt.Sprintf(message, args...))
+	msgArgs := fmt.Sprintf(message, args...)
+	entryString := fmt.Sprintf("%s %s %s", time.Now().Format(TimeFormat), logLevel, msgArgs)
 	fmt.Fprintln(os.Stderr, entryString)
+
+	if syslogWriter != nil {
+		go func() error {
+
+			switch logLevel {
+			case FATAL:
+				return syslogWriter.Emerg(msgArgs)
+			case CRITICAL:
+				return syslogWriter.Crit(msgArgs)
+			case ERROR:
+				return syslogWriter.Err(msgArgs)
+			case WARNING:
+				return syslogWriter.Warning(msgArgs)
+			case NOTICE:
+				return syslogWriter.Notice(msgArgs)
+			case INFO:
+				return syslogWriter.Info(msgArgs)
+			case DEBUG:
+				return syslogWriter.Debug(msgArgs)
+			}
+			return nil
+		}()
+	}
 	return entryString
 }
 
