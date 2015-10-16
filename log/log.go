@@ -86,6 +86,7 @@ var globalLogLevel LogLevel = DEBUG
 var printStackTrace bool = false
 
 // syslogWriter is optional, and defaults to nil (disabled)
+var syslogLevel LogLevel = ERROR
 var syslogWriter *syslog.Writer
 
 // SetPrintStackTrace enables/disables dumping the stack upon error logging
@@ -113,6 +114,13 @@ func EnableSyslogWriter(tag string) (err error) {
 	return err
 }
 
+// SetSyslogLevel sets the minimal syslog level. Only entries with level equals or higher than
+// this value will be logged. However, this is also capped by the global log level. That is,
+// messages with lower level than global-log-level will be discarded at any case.
+func SetSyslogLevel(logLevel LogLevel) {
+	syslogLevel = logLevel
+}
+
 // logFormattedEntry nicely formats and emits a log entry
 func logFormattedEntry(logLevel LogLevel, message string, args ...interface{}) string {
 	if logLevel > globalLogLevel {
@@ -124,6 +132,9 @@ func logFormattedEntry(logLevel LogLevel, message string, args ...interface{}) s
 
 	if syslogWriter != nil {
 		go func() error {
+			if logLevel > syslogLevel {
+				return nil
+			}
 			switch logLevel {
 			case FATAL:
 				return syslogWriter.Emerg(msgArgs)
