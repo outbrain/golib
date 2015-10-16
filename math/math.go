@@ -72,7 +72,7 @@ func MaxUInt64(i1, i2 uint64) uint64 {
 	return i2
 }
 
-// TernaryString acts as liek an "? :" C-style ternary operator for strings
+// TernaryString acts like a "? :" C-style ternary operator for strings
 func TernaryString(condition bool, resTrue string, resFalse string) string {
 	if condition {
 		return resTrue
@@ -80,7 +80,7 @@ func TernaryString(condition bool, resTrue string, resFalse string) string {
 	return resFalse
 }
 
-// TernaryString acts as liek an "? :" C-style ternary operator for ints
+// TernaryString acts like a "? :" C-style ternary operator for ints
 func TernaryInt(condition bool, resTrue int, resFalse int) int {
 	if condition {
 		return resTrue
