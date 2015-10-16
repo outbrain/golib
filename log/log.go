@@ -78,14 +78,15 @@ const (
 	DEBUG
 )
 
-var syslogWriter *syslog.Writer
-
 const TimeFormat = "2006-01-02 15:04:05"
 
 // globalLogLevel indicates the global level filter for all logs (only entries with level equals or higher
 // than this value will be logged)
 var globalLogLevel LogLevel = DEBUG
 var printStackTrace bool = false
+
+// syslogWriter is optional, and defaults to nil (disabled)
+var syslogWriter *syslog.Writer
 
 // SetPrintStackTrace enables/disables dumping the stack upon error logging
 func SetPrintStackTrace(shouldPrintStackTrace bool) {
@@ -103,6 +104,7 @@ func GetLevel() LogLevel {
 	return globalLogLevel
 }
 
+// EnableSyslogWriter enables, if possible, writes to syslog. These will execute _in addition_ to normal logging
 func EnableSyslogWriter(tag string) (err error) {
 	syslogWriter, err = syslog.New(syslog.LOG_ERR, tag)
 	if err != nil {
@@ -122,7 +124,6 @@ func logFormattedEntry(logLevel LogLevel, message string, args ...interface{}) s
 
 	if syslogWriter != nil {
 		go func() error {
-
 			switch logLevel {
 			case FATAL:
 				return syslogWriter.Emerg(msgArgs)
