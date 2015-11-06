@@ -195,7 +195,7 @@ func ScanRowsToMaps(rows *sql.Rows, on_row func(RowMap) error) error {
 
 // QueryRowsMap is a convenience function allowing querying a result set while poviding a callback
 // function activated per read row.
-func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error) error {
+func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error, args ...interface{}) error {
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
@@ -203,7 +203,7 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error) error {
 		}
 	}()
 
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, args...)
 	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
 		return log.Errore(err)
@@ -213,7 +213,7 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error) error {
 }
 
 // queryResultData returns a raw array of rows for a given query, optionally reading and returning column names
-func queryResultData(db *sql.DB, query string, retrieveColumns bool) (ResultData, []string, error) {
+func queryResultData(db *sql.DB, query string, retrieveColumns bool, args ...interface{}) (ResultData, []string, error) {
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
@@ -222,7 +222,7 @@ func queryResultData(db *sql.DB, query string, retrieveColumns bool) (ResultData
 	}()
 
 	columns := []string{}
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, args...)
 	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
 		return EmptyResultData, columns, log.Errore(err)
@@ -240,21 +240,21 @@ func queryResultData(db *sql.DB, query string, retrieveColumns bool) (ResultData
 }
 
 // QueryResultData returns a raw array of rows
-func QueryResultData(db *sql.DB, query string) (ResultData, error) {
-	resultData, _, err := queryResultData(db, query, false)
+func QueryResultData(db *sql.DB, query string, args ...interface{}) (ResultData, error) {
+	resultData, _, err := queryResultData(db, query, false, args...)
 	return resultData, err
 }
 
 // QueryResultDataNamed returns a raw array of rows, with column names
-func QueryResultDataNamed(db *sql.DB, query string) (ResultData, []string, error) {
-	return queryResultData(db, query, true)
+func QueryResultDataNamed(db *sql.DB, query string, args ...interface{}) (ResultData, []string, error) {
+	return queryResultData(db, query, true, args...)
 }
 
 // QueryRowsMapBuffered reads data from the database into a buffer, and only then applies the given function per row.
 // This allows the application to take its time with processing the data, albeit consuming as much memory as required by
 // the result set.
-func QueryRowsMapBuffered(db *sql.DB, query string, on_row func(RowMap) error) error {
-	resultData, columns, err := queryResultData(db, query, true)
+func QueryRowsMapBuffered(db *sql.DB, query string, on_row func(RowMap) error, args ...interface{}) error {
+	resultData, columns, err := queryResultData(db, query, true, args...)
 	if err != nil {
 		// Already logged
 		return err
@@ -325,4 +325,9 @@ func InClauseStringValues(terms []string) string {
 		quoted = append(quoted, fmt.Sprintf("'%s'", strings.Replace(s, ",", "''", -1)))
 	}
 	return strings.Join(quoted, ", ")
+}
+
+// Convert variable length arguments into arguments array
+func Args(args ...interface{}) []interface{} {
+	return args
 }
