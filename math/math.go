@@ -72,6 +72,20 @@ func MaxUInt64(i1, i2 uint64) uint64 {
 	return i2
 }
 
+func MinString(i1, i2 string) string {
+	if i1 < i2 {
+		return i1
+	}
+	return i2
+}
+
+func MaxString(i1, i2 string) string {
+	if i1 > i2 {
+		return i1
+	}
+	return i2
+}
+
 // TernaryString acts like a "? :" C-style ternary operator for strings
 func TernaryString(condition bool, resTrue string, resFalse string) string {
 	if condition {
