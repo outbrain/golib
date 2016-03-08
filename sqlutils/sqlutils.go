@@ -129,9 +129,7 @@ var knownDBsMutex = &sync.Mutex{}
 // bool result indicates whether the DB was returned from cache; err
 func GetDB(mysql_uri string) (*sql.DB, bool, error) {
 	knownDBsMutex.Lock()
-	defer func() {
-		knownDBsMutex.Unlock()
-	}()
+	defer knownDBsMutex.Unlock()
 
 	var exists bool
 	if _, exists = knownDBs[mysql_uri]; !exists {
