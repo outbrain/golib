@@ -19,7 +19,6 @@ package sqlutils
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/outbrain/golib/log"
@@ -203,7 +202,7 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error, args ...i
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("QueryRowsMap unexpected error: %+v", derr))
+			err = fmt.Errorf("QueryRowsMap unexpected error: %+v", derr)
 		}
 	}()
 
@@ -221,7 +220,7 @@ func queryResultData(db *sql.DB, query string, retrieveColumns bool, args ...int
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("QueryRowsMap unexpected error: %+v", derr))
+			err = fmt.Errorf("QueryRowsMap unexpected error: %+v", derr)
 		}
 	}()
 
@@ -280,7 +279,7 @@ func ExecNoPrepare(db *sql.DB, query string, args ...interface{}) (sql.Result, e
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("ExecNoPrepare unexpected error: %+v", derr))
+			err = fmt.Errorf("ExecNoPrepare unexpected error: %+v", derr)
 		}
 	}()
 
@@ -298,7 +297,7 @@ func execInternal(silent bool, db *sql.DB, query string, args ...interface{}) (s
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("execInternal unexpected error: %+v", derr))
+			err = fmt.Errorf("execInternal unexpected error: %+v", derr)
 		}
 	}()
 
