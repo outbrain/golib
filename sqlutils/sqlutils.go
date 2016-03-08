@@ -157,7 +157,10 @@ func RowToArray(rows *sql.Rows, columns []string) []CellData {
 // ScanRowsToArrays is a convenience function, typically not called directly, which maps rows
 // already read from the databse into arrays of NullString
 func ScanRowsToArrays(rows *sql.Rows, on_row func([]CellData) error) error {
-	columns, _ := rows.Columns()
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
 	for rows.Next() {
 		arr := RowToArray(rows, columns)
 		err := on_row(arr)
@@ -179,8 +182,11 @@ func rowToMap(row []CellData, columns []string) map[string]CellData {
 // ScanRowsToMaps is a convenience function, typically not called directly, which maps rows
 // already read from the databse into RowMap entries.
 func ScanRowsToMaps(rows *sql.Rows, on_row func(RowMap) error) error {
-	columns, _ := rows.Columns()
-	err := ScanRowsToArrays(rows, func(arr []CellData) error {
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+	err = ScanRowsToArrays(rows, func(arr []CellData) error {
 		m := rowToMap(arr, columns)
 		err := on_row(m)
 		if err != nil {
@@ -227,7 +233,10 @@ func queryResultData(db *sql.DB, query string, retrieveColumns bool, args ...int
 	defer rows.Close()
 	if retrieveColumns {
 		// Don't pay if you don't want to
-		columns, _ = rows.Columns()
+		columns, err = rows.Columns()
+		if err != nil {
+			return EmptyResultData, nil, err
+		}
 	}
 	resultData := ResultData{}
 	err = ScanRowsToArrays(rows, func(rowData []CellData) error {
