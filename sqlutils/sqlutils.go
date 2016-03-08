@@ -204,10 +204,10 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error, args ...i
 	}()
 
 	rows, err := db.Query(query, args...)
-	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
 		return log.Errore(err)
 	}
+	defer rows.Close()
 	err = ScanRowsToMaps(rows, on_row)
 	return err
 }
@@ -223,10 +223,10 @@ func queryResultData(db *sql.DB, query string, retrieveColumns bool, args ...int
 
 	columns := []string{}
 	rows, err := db.Query(query, args...)
-	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
 		return EmptyResultData, columns, log.Errore(err)
 	}
+	defer rows.Close()
 	if retrieveColumns {
 		// Don't pay if you don't want to
 		columns, _ = rows.Columns()
