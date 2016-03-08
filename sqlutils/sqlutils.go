@@ -53,7 +53,7 @@ type RowData []CellData
 func (this *RowData) MarshalJSON() ([]byte, error) {
 	cells := make([](*CellData), len(*this), len(*this))
 	for i, val := range *this {
-		d := CellData(val)
+		d := val
 		cells[i] = &d
 	}
 	return json.Marshal(cells)
