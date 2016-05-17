@@ -1,5 +1,5 @@
 Outbrain's common go lang libraries
 
 ```
-go get "github.com/outbrain/golib/math"
+go get "github.com/openark/golib/math"
 ```
