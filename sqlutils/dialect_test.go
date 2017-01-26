@@ -19,7 +19,7 @@ package sqlutils
 import (
 	"testing"
 
-	test "github.com/outbrain/golib/tests"
+	test "github.com/openark/golib/tests"
 )
 
 func init() {
