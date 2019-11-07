@@ -22,7 +22,6 @@ import (
 	"log/syslog"
 	"os"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
@@ -128,16 +127,11 @@ func logFormattedEntry(logLevel LogLevel, message string, args ...interface{}) s
 		return ""
 	}
 	// if TZ env variable is set, update the timestamp timezone
-	var localizedTime time.Time
+	localizedTime := time.Now()
 	tzLocation := os.Getenv("TZ")
-	switch strings.ToUpper(tzLocation) {
-	case "UTC":
-		localizedTime = time.Now().UTC()
-	default:
-		location, err := time.LoadLocation(tzLocation)
-		if err == nil { // if it errors out it defaults to UTC, so only take valid locations
-			localizedTime = time.Now().In(location)
-		}
+	location, err := time.LoadLocation(tzLocation)
+	if err == nil { // if invalid tz location was provided, just leave it as the default
+		localizedTime = time.Now().In(location)
 	}
 
 	msgArgs := fmt.Sprintf(message, args...)
