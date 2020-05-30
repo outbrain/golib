@@ -19,7 +19,6 @@ package sqlutils
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/outbrain/golib/log"
@@ -54,7 +53,7 @@ type RowData []CellData
 func (this *RowData) MarshalJSON() ([]byte, error) {
 	cells := make([](*CellData), len(*this), len(*this))
 	for i, val := range *this {
-		d := CellData(val)
+		d := val
 		cells[i] = &d
 	}
 	return json.Marshal(cells)
@@ -129,9 +128,7 @@ var knownDBsMutex = &sync.Mutex{}
 // bool result indicates whether the DB was returned from cache; err
 func GetDB(mysql_uri string) (*sql.DB, bool, error) {
 	knownDBsMutex.Lock()
-	defer func() {
-		knownDBsMutex.Unlock()
-	}()
+	defer knownDBsMutex.Unlock()
 
 	var exists bool
 	if _, exists = knownDBs[mysql_uri]; !exists {
@@ -149,7 +146,7 @@ func GetDB(mysql_uri string) (*sql.DB, bool, error) {
 func RowToArray(rows *sql.Rows, columns []string) []CellData {
 	buff := make([]interface{}, len(columns))
 	data := make([]CellData, len(columns))
-	for i, _ := range buff {
+	for i := range buff {
 		buff[i] = data[i].NullString()
 	}
 	rows.Scan(buff...)
@@ -159,7 +156,10 @@ func RowToArray(rows *sql.Rows, columns []string) []CellData {
 // ScanRowsToArrays is a convenience function, typically not called directly, which maps rows
 // already read from the databse into arrays of NullString
 func ScanRowsToArrays(rows *sql.Rows, on_row func([]CellData) error) error {
-	columns, _ := rows.Columns()
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
 	for rows.Next() {
 		arr := RowToArray(rows, columns)
 		err := on_row(arr)
@@ -181,8 +181,11 @@ func rowToMap(row []CellData, columns []string) map[string]CellData {
 // ScanRowsToMaps is a convenience function, typically not called directly, which maps rows
 // already read from the databse into RowMap entries.
 func ScanRowsToMaps(rows *sql.Rows, on_row func(RowMap) error) error {
-	columns, _ := rows.Columns()
-	err := ScanRowsToArrays(rows, func(arr []CellData) error {
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+	err = ScanRowsToArrays(rows, func(arr []CellData) error {
 		m := rowToMap(arr, columns)
 		err := on_row(m)
 		if err != nil {
@@ -199,15 +202,15 @@ func QueryRowsMap(db *sql.DB, query string, on_row func(RowMap) error, args ...i
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("QueryRowsMap unexpected error: %+v", derr))
+			err = fmt.Errorf("QueryRowsMap unexpected error: %+v", derr)
 		}
 	}()
 
 	rows, err := db.Query(query, args...)
-	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
 		return log.Errore(err)
 	}
+	defer rows.Close()
 	err = ScanRowsToMaps(rows, on_row)
 	return err
 }
@@ -217,19 +220,22 @@ func queryResultData(db *sql.DB, query string, retrieveColumns bool, args ...int
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("QueryRowsMap unexpected error: %+v", derr))
+			err = fmt.Errorf("QueryRowsMap unexpected error: %+v", derr)
 		}
 	}()
 
 	columns := []string{}
 	rows, err := db.Query(query, args...)
-	defer rows.Close()
 	if err != nil && err != sql.ErrNoRows {
 		return EmptyResultData, columns, log.Errore(err)
 	}
+	defer rows.Close()
 	if retrieveColumns {
 		// Don't pay if you don't want to
-		columns, _ = rows.Columns()
+		columns, err = rows.Columns()
+		if err != nil {
+			return EmptyResultData, nil, err
+		}
 	}
 	resultData := ResultData{}
 	err = ScanRowsToArrays(rows, func(rowData []CellData) error {
@@ -273,7 +279,7 @@ func ExecNoPrepare(db *sql.DB, query string, args ...interface{}) (sql.Result, e
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("ExecNoPrepare unexpected error: %+v", derr))
+			err = fmt.Errorf("ExecNoPrepare unexpected error: %+v", derr)
 		}
 	}()
 
@@ -291,7 +297,7 @@ func execInternal(silent bool, db *sql.DB, query string, args ...interface{}) (s
 	var err error
 	defer func() {
 		if derr := recover(); derr != nil {
-			err = errors.New(fmt.Sprintf("execInternal unexpected error: %+v", derr))
+			err = fmt.Errorf("execInternal unexpected error: %+v", derr)
 		}
 	}()
 
